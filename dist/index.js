@@ -27,10 +27,10 @@ function main() {
         let rabbitMQ = yield rabbitmq_1.default.getInstance();
         let channel = rabbitMQ.getChannel();
         let data = {
-            userId: "7DImtD5bCWMiIYdlin5rTOBXLhz1",
+            userId: "new_user",
             payload: {
-                title: "ajeem bhai kya hal chal",
-                description: "kaisa lagi ye photo",
+                title: "title ",
+                description: "description",
                 imageUrl: "https://plus.unsplash.com/premium_photo-1664474619075-644dd191935f?q=80&w=2069&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
                 type: "BUILDER",
                 link: "https://www.google.com"
