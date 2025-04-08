@@ -1,1 +1,0 @@
-{"root":["./src/index.ts","./src/config/mongo-config.ts","./src/config/onesignal-config.ts","./src/modules/db/db.client.ts","./src/modules/db/db.model.ts","./src/modules/queue/queue.model.ts","./src/modules/queue/queue.service.ts","./src/modules/queue/queue.worker.ts","./src/modules/queue/rabbitmq.ts"],"version":"5.8.2"}
