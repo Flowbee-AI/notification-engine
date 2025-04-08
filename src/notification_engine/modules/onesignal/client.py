@@ -17,7 +17,6 @@ class OneSignalClient:
         self,
         contents: Dict[str, str],
         headings: Optional[Dict[str, str]] = None,
-        included_segments: Optional[list] = None,
         include_external_user_ids: Optional[list] = None,
         data: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
@@ -30,13 +29,21 @@ class OneSignalClient:
 
         if headings:
             payload["headings"] = headings
-        if included_segments:
-            payload["included_segments"] = included_segments
+        # if included_segments:
+        #     payload["included_segments"] = included_segments
         if include_external_user_ids:
-            payload["include_external_user_ids"] = include_external_user_ids
+            #             "include_aliases": {
+            #     "external_id": [
+            #       "user1",
+            #       "user2",
+            #       "user3"
+            #     ]
+            #   },
+            payload["include_aliases"] = {"external_id": include_external_user_ids}
+            payload["target_channel"] = "push"
         if data:
             payload["data"] = data
-
+        print(payload)
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 url, headers=self.headers, json=payload

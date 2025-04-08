@@ -1,5 +1,9 @@
 from typing import Dict, Any, Callable
 import json
+
+from notification_engine.models.notification_model import NotificationObj
+
+
 from .rabbitmq import RabbitMQ
 from .worker import NotificationWorker
 from ...utils.logger import logger
@@ -40,13 +44,13 @@ class QueueService:
         logger.info("Starting to consume messages")
         await self.rabbitmq.consume(message_handler)
 
-    async def publish_message(self, message: Dict[str, Any]) -> None:
+    async def publish_message(self, message: NotificationObj) -> None:
         """
         Publish a message to the queue
         """
         try:
             logger.info("Publishing message to queue")
-            await self.rabbitmq.publish(message)
+            await self.rabbitmq.publish(message.model_dump())
             logger.info("Message published successfully")
         except Exception as e:
             logger.error(f"Error publishing message: {str(e)}")

@@ -4,6 +4,10 @@ from typing import Callable, Dict, Any, Optional
 from functools import wraps
 import backoff
 from aio_pika import Message
+
+from notification_engine.models.notification_model import NotificationObj
+
+
 from .rabbitmq import RabbitMQ
 from ..onesignal.client import OneSignalClient
 from ...config.onesignal_config import OneSignalConfig
@@ -37,23 +41,15 @@ class NotificationWorker:
         try:
             # Decode and parse message
             body = message.body.decode()
-            data = json.loads(body)
-            logger.info(f"Processing notification message: {data}")
-
-            # Extract notification details
-            contents = data.get("contents", {})
-            headings = data.get("headings")
-            included_segments = data.get("included_segments")
-            include_external_user_ids = data.get("include_external_user_ids")
-            data = data.get("data")
+            notification_obj = NotificationObj(**json.loads(body))
+            logger.info(f"Processing notification message: {notification_obj}")
 
             # Send notification through OneSignal
             result = await self.onesignal_client.create_notification(
-                contents=contents,
-                headings=headings,
-                included_segments=included_segments,
-                include_external_user_ids=include_external_user_ids,
-                data=data,
+                contents=notification_obj.contents,
+                headings=notification_obj.headings,
+                include_external_user_ids=notification_obj.external_ids,
+                data=notification_obj.data,
             )
 
             # Record metrics
@@ -92,4 +88,3 @@ class NotificationWorker:
         except Exception as e:
             logger.error(f"Health check failed: {str(e)}")
             return False
-

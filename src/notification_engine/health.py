@@ -5,6 +5,7 @@ from .modules.queue.worker import NotificationWorker
 from .utils.metrics import metrics
 from .config.settings import settings
 from .modules.onesignal.client import OneSignalClient
+
 app = FastAPI(title="Notification Engine Health Check")
 
 # Add CORS middleware
@@ -89,4 +90,5 @@ def start_health_server(worker: NotificationWorker) -> None:
         host="0.0.0.0",
         port=settings.health_check_port,
         log_level="info",
+        reload=True,
     )

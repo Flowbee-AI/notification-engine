@@ -1,7 +1,9 @@
 import asyncio
 from dotenv import load_dotenv
+from pydantic import BaseModel
 from notification_engine.config.settings import settings
 from notification_engine.config.onesignal_config import OneSignalConfig
+from notification_engine.models.notification_model import NotificationObj
 from notification_engine.modules.queue.rabbitmq import RabbitMQ
 from notification_engine.modules.queue.worker import NotificationWorker
 from notification_engine.modules.queue.queue_service import QueueService
@@ -38,13 +40,12 @@ async def main():
         await rabbitmq.setup_channel()
 
         # Test notification data
-        test_message = {
-            "contents": {"en": "Test notification message"},
-            "headings": {"en": "Test Notification"},
-            "included_segments": ["All"],
-            "data": {"type": "TEST"},
-            "external_id": "LvDnIj8Qu9gWd0qEib2RGaHS2hg1",
-        }
+        test_message = NotificationObj(
+            contents={"en": "parth ke tests"},
+            headings={"en": "Test Notification"},
+            data={"type": "TEST"},
+            external_ids=["LvDnIj8Qu9gWd0qEib2RGaHS2hg1"],
+        )
 
         # Publish test message
         await queue_service.publish_message(test_message)
