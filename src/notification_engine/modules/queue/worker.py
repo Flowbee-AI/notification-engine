@@ -1,29 +1,51 @@
 import json
 import asyncio
-from typing import Dict, Any, Callable
+from typing import Callable, Dict, Any, Optional
+from functools import wraps
+import backoff
+from aio_pika import Message
 from .rabbitmq import RabbitMQ
 from ..onesignal.client import OneSignalClient
 from ...config.onesignal_config import OneSignalConfig
+from ...config.settings import settings
 from ...utils.logger import logger
+from ...utils.metrics import metrics
 
 
 class NotificationWorker:
-    def __init__(self, onesignal_config: OneSignalConfig):
-        self.onesignal_client = OneSignalClient(onesignal_config)
+    def __init__(self, onesignal_client: OneSignalClient):
+        self.onesignal_client = onesignal_client
+        self._processing = False
 
-    async def process_message(self, message: Dict[str, Any]) -> None:
+    @backoff.on_exception(
+        backoff.expo,
+        Exception,
+        max_tries=settings.onesignal.max_retries,
+        max_time=30,
+    )
+    async def process_message(self, message: Message) -> None:
         """
         Process a notification message from the queue
         """
-        try:
-            logger.info(f"Processing notification message: {message}")
+        if self._processing:
+            logger.warning("Worker is already processing a message")
+            return
 
-            # Extract notification details from message
-            contents = message.get("contents", {})
-            headings = message.get("headings")
-            included_segments = message.get("included_segments")
-            include_external_user_ids = message.get("include_external_user_ids")
-            data = message.get("data")
+        self._processing = True
+        start_time = asyncio.get_event_loop().time()
+
+        try:
+            # Decode and parse message
+            body = message.body.decode()
+            data = json.loads(body)
+            logger.info(f"Processing notification message: {data}")
+
+            # Extract notification details
+            contents = data.get("contents", {})
+            headings = data.get("headings")
+            included_segments = data.get("included_segments")
+            include_external_user_ids = data.get("include_external_user_ids")
+            data = data.get("data")
 
             # Send notification through OneSignal
             result = await self.onesignal_client.create_notification(
@@ -34,44 +56,40 @@ class NotificationWorker:
                 data=data,
             )
 
+            # Record metrics
+            processing_time = asyncio.get_event_loop().time() - start_time
+            metrics.record_processing_time(processing_time)
+            metrics.increment("notifications_sent")
+
             logger.info(f"Notification sent successfully: {result}")
+            await message.ack()
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid message format: {str(e)}")
+            await message.reject(requeue=False)
+            metrics.increment("messages_rejected")
 
         except Exception as e:
             logger.error(f"Error processing notification message: {str(e)}")
+            await message.reject(requeue=True)
+            metrics.increment("messages_failed")
             raise
 
+        finally:
+            self._processing = False
 
-class Worker:
-    _instance = None
+    async def health_check(self) -> bool:
+        """
+        Perform a health check of the worker
+        """
+        try:
+            # Check if we can create a test notification
+            await self.onesignal_client.create_notification(
+                contents={"en": "Health check"},
+                included_segments=["All"],
+            )
+            return True
+        except Exception as e:
+            logger.error(f"Health check failed: {str(e)}")
+            return False
 
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(Worker, cls).__new__(cls)
-        return cls._instance
-
-    @classmethod
-    async def get_instance(cls) -> "Worker":
-        if cls._instance is None:
-            cls._instance = Worker()
-        return cls._instance
-
-    async def start(self, job_function: Callable[[Dict[str, Any]], None]):
-        rabbitmq = await RabbitMQ.get_instance()
-        channel = rabbitmq.get_channel()
-
-        def callback(ch, method, properties, body):
-            try:
-                data = json.loads(body)
-                # Create and run the event loop for the coroutine
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                loop.run_until_complete(job_function(data))
-                loop.close()
-                ch.basic_ack(delivery_tag=method.delivery_tag)
-            except Exception as e:
-                print(f"Error processing message: {e}")
-                ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
-
-        channel.basic_qos(prefetch_count=1)
-        channel.basic_consume(queue="notification", on_message_callback=callback)
-        channel.start_consuming()

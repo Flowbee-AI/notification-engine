@@ -1,11 +1,12 @@
 import asyncio
-import os
 from dotenv import load_dotenv
-from .config.onesignal_config import OneSignalConfig
-from .modules.queue.rabbitmq import RabbitMQ
-from .modules.queue.worker import NotificationWorker
-from .modules.queue.queue_service import QueueService
-from .utils.logger import logger, setup_logger
+from notification_engine.config.settings import settings
+from notification_engine.config.onesignal_config import OneSignalConfig
+from notification_engine.modules.queue.rabbitmq import RabbitMQ
+from notification_engine.modules.queue.worker import NotificationWorker
+from notification_engine.modules.queue.queue_service import QueueService
+from notification_engine.modules.onesignal.client import OneSignalClient
+from notification_engine.utils.logger import logger, setup_logger
 
 # Load environment variables
 load_dotenv()
@@ -14,27 +15,26 @@ load_dotenv()
 async def main():
     try:
         # Set up logging
-        setup_logger("notification_engine", level=None)
+        setup_logger("notification_engine", level=settings.log_level)
         logger.info("Starting test publisher")
 
-        # Initialize RabbitMQ
-        rabbitmq = RabbitMQ(
-            host=os.getenv("RABBITMQ_HOST", "localhost"),
-            port=int(os.getenv("RABBITMQ_PORT", "5672")),
-        )
-
-        # Initialize OneSignal config and worker
+        # Initialize OneSignal client
         onesignal_config = OneSignalConfig(
-            app_id=os.getenv("ONESIGNAL_APP_ID", ""),
-            rest_api_key=os.getenv("ONESIGNAL_REST_API_KEY", ""),
+            app_id=settings.onesignal.app_id,
+            rest_api_key=settings.onesignal.rest_api_key,
+            api_url=settings.onesignal.api_url,
         )
-        worker = NotificationWorker(onesignal_config)
+        onesignal_client = OneSignalClient(onesignal_config)
 
-        # Initialize queue service
+        # Initialize RabbitMQ
+        rabbitmq = await RabbitMQ.get_instance()
+
+        # Initialize worker and queue service
+        worker = NotificationWorker(onesignal_client)
         queue_service = QueueService(rabbitmq, worker)
 
-        # Connect to RabbitMQ
-        await rabbitmq.connect()
+        # Initialize RabbitMQ connection
+        await rabbitmq.initialize()
         await rabbitmq.setup_channel()
 
         # Test notification data
@@ -43,6 +43,7 @@ async def main():
             "headings": {"en": "Test Notification"},
             "included_segments": ["All"],
             "data": {"type": "TEST"},
+            "external_id": "LvDnIj8Qu9gWd0qEib2RGaHS2hg1",
         }
 
         # Publish test message

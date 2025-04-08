@@ -15,7 +15,7 @@ class QueueService:
         Start the queue service
         """
         logger.info("Starting queue service")
-        await self.rabbitmq.connect()
+        await self.rabbitmq.initialize()
         await self.rabbitmq.setup_channel()
         await self.consume_messages()
 
