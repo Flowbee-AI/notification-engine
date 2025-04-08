@@ -4,7 +4,7 @@ from typing import Dict, Any
 from .modules.queue.worker import NotificationWorker
 from .utils.metrics import metrics
 from .config.settings import settings
-
+from .modules.onesignal.client import OneSignalClient
 app = FastAPI(title="Notification Engine Health Check")
 
 # Add CORS middleware
@@ -19,7 +19,7 @@ app.add_middleware(
 
 # Create a dependency to get the worker instance
 def get_worker() -> NotificationWorker:
-    return NotificationWorker()
+    return NotificationWorker(onesignal_client=OneSignalClient(settings.onesignal))
 
 
 @app.get("/health")

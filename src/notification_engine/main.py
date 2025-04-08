@@ -14,7 +14,7 @@ from .utils.metrics import metrics
 from .health import start_health_server
 
 # Load environment variables
-load_dotenv()
+load_dotenv(dotenv_path=".env")
 
 
 async def shutdown(signal, loop, queue_service):

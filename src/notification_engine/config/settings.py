@@ -3,9 +3,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
-
-# Debug code removed to avoid printing sensitive environment variables
+# Load environment variables first to ensure they're available
+load_dotenv(dotenv_path=".env")
 
 
 class RabbitMQSettings(BaseSettings):
@@ -27,12 +26,9 @@ class OneSignalSettings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="allow"
     )
-    app_id: str = Field(
-        default="376dc542-b47f-42fb-bf6e-88c371ae68de", env="ONESIGNAL_APP_ID"
-    )
+    app_id: str = Field(default=os.getenv("ONESIGNAL_APP_ID"), env="ONESIGNAL_APP_ID")
     rest_api_key: str = Field(
-        default="os_v2_app_g5w4kqvup5bpxp3ordbxdlti3zv7ugyznrbudmma3rwhmb5pge4gcznyiuigoseroiqgflrlv7lbapjbrrxbd5cspxgtdgtmfhw5oza",
-        env="ONESIGNAL_REST_API_KEY",
+        default=os.getenv("ONESIGNAL_REST_API_KEY"), env="ONESIGNAL_REST_API_KEY"
     )
     api_url: str = Field(
         default="https://onesignal.com/api/v1", env="ONESIGNAL_API_URL"
