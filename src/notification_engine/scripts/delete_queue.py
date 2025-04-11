@@ -1,7 +1,7 @@
 import asyncio
 import aio_pika
-from ..config.settings import settings
-from ..utils.logger import logger
+from notification_engine.config.settings import settings
+from notification_engine.utils.logger import logger
 
 
 async def delete_queue():

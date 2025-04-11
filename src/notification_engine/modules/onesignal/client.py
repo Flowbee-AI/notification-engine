@@ -1,4 +1,5 @@
 import aiohttp
+import requests
 from typing import Dict, Any, Optional
 from ...config.onesignal_config import OneSignalConfig
 
@@ -8,7 +9,7 @@ class OneSignalClient:
         self.config = config
         self.base_url = "https://onesignal.com/api/v1"
         self.headers = {
-            "Content-Type": "application/json", 
+            "Content-Type": "application/json",
             "Authorization": f"Basic {self.config.rest_api_key}",
         }
 
@@ -20,7 +21,7 @@ class OneSignalClient:
         data: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
-        Create and send a notification through OneSignal
+        Create and send a notification through OneSignal (async)
         """
         url = f"{self.base_url}/notifications"
         payload = {"app_id": self.config.app_id, "contents": contents}
@@ -38,8 +39,41 @@ class OneSignalClient:
             payload["data"] = data
 
         async with aiohttp.ClientSession() as session:
-            async with session.post(url, headers=self.headers, json=payload) as response:
+            async with session.post(
+                url, headers=self.headers, json=payload
+            ) as response:
                 return await response.json()
+
+    def create_notification_sync(
+        self,
+        contents: Dict[str, str],
+        headings: Optional[Dict[str, str]] = None,
+        include_external_user_ids: Optional[list] = None,
+        data: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Create and send a notification through OneSignal (sync version for Celery tasks)
+        """
+        try:
+            url = f"{self.base_url}/notifications"
+            payload = {"app_id": self.config.app_id, "contents": contents}
+
+            if headings:
+                payload["headings"] = headings
+
+            if not include_external_user_ids:
+                payload["included_segments"] = ["All"]
+            else:
+                payload["include_aliases"] = {"external_id": include_external_user_ids}
+                payload["target_channel"] = "push"
+
+            if data:
+                payload["data"] = data
+
+            response = requests.post(url, headers=self.headers, json=payload)
+            return response.json()
+        except Exception as e:
+            raise Exception(f"Failed to send notification: {str(e)}")
 
     async def cancel_notification(self, notification_id: str) -> Dict[str, Any]:
         """
@@ -55,7 +89,7 @@ class OneSignalClient:
         """
         View the details of a notification
         """
-        url = f"{self.base_url}/notifications/{notification_id}"
+        url = f"{self.base_url}/notifications/{notification_id}?app_id={self.config.app_id}"
 
         async with aiohttp.ClientSession() as session:
             async with session.get(url, headers=self.headers) as response:

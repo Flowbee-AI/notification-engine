@@ -1,17 +1,17 @@
 [tool.poetry]
 name = "notification-engine"
 version = "0.1.0"
-description = "A notification engine using RabbitMQ and OneSignal"
+description = "A notification engine using Celery and OneSignal"
 authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-aio-pika = "^9.4.0"
+celery = "^5.3.6"
+fastapi = "^0.115.12"
 aiohttp = "^3.9.3"
 python-dotenv = "^1.0.1"
 typing-extensions = "^4.10.0"
-fastapi = "^0.115.12"
 backoff = "^2.2.1"
 uvicorn = "^0.34.0"
 pydantic-settings = "^2.8.1"
