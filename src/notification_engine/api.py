@@ -41,7 +41,7 @@ class TaskStatusResponse(BaseModel):
     result: Optional[Dict[str, Any]] = None
 
 
-@app.post("/api/notifications/send", response_model=NotificationResponse)
+@app.post("/notifications/send", response_model=NotificationResponse)
 async def send_notification_endpoint(notification: NotificationObj):
     """
     Send a notification via Celery task
@@ -49,9 +49,6 @@ async def send_notification_endpoint(notification: NotificationObj):
     try:
         # Submit task to Celery
         print(f"Sending notification: {notification.model_dump()}")
-        # Log broker URL for debugging
-        broker_url = celery_app.conf.broker_url
-        logger.info(f"Using broker URL: {broker_url}")
         task = send_notification.delay(notification.model_dump())
         print(f"Task submitted: {task.id}")
         logger.info(f"Notification task submitted: {task.id}")
@@ -65,7 +62,7 @@ async def send_notification_endpoint(notification: NotificationObj):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/notifications/status/{task_id}", response_model=TaskStatusResponse)
+@app.get("/notifications/status/{task_id}", response_model=TaskStatusResponse)
 async def get_notification_status(task_id: str):
     """
     Get the status of a notification task
@@ -86,7 +83,7 @@ async def get_notification_status(task_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/health")
+@app.get("/health")
 async def health_check():
     """
     Health check endpoint
