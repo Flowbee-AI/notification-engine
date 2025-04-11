@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict, Any
+
+from notification_engine.config.onesignal_config import OneSignalConfig
 from .modules.queue.worker import NotificationWorker
 from .utils.metrics import metrics
 from .config.settings import settings
@@ -20,7 +22,9 @@ app.add_middleware(
 
 # Create a dependency to get the worker instance
 def get_worker() -> NotificationWorker:
-    return NotificationWorker(onesignal_client=OneSignalClient(settings.onesignal))
+    return NotificationWorker(
+        onesignal_client=OneSignalClient(config=OneSignalConfig())
+    )
 
 
 @app.get("/health")

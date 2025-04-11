@@ -22,9 +22,9 @@ async def main():
 
         # Initialize OneSignal client
         onesignal_config = OneSignalConfig(
-            app_id=settings.onesignal.app_id,
-            rest_api_key=settings.onesignal.rest_api_key,
-            api_url=settings.onesignal.api_url,
+            app_id=settings.onesignal_app_id,
+            rest_api_key=settings.onesignal_rest_api_key,
+            api_url=settings.onesignal_api_url,
         )
         onesignal_client = OneSignalClient(onesignal_config)
 

@@ -35,13 +35,19 @@ class RabbitMQ:
 
     async def _get_connection(self) -> Connection:
         """Create a new connection"""
-        return await aio_pika.connect_robust(
-            host=settings.rabbitmq.host,
-            port=settings.rabbitmq.port,
-            login=settings.rabbitmq.username,
-            password=settings.rabbitmq.password,
-            virtualhost=settings.rabbitmq.vhost,
-        )
+        connection_params = {
+            "host": settings.rabbitmq_host,
+            "port": settings.rabbitmq_port,
+            "login": settings.rabbitmq_username,
+            "password": settings.rabbitmq_password,
+            "virtualhost": settings.rabbitmq_vhost,
+        }
+        
+        # Add SSL if enabled
+        if settings.rabbitmq_ssl:
+            connection_params["ssl"] = True
+            
+        return await aio_pika.connect_robust(**connection_params)
 
     async def _get_channel(self) -> Channel:
         """Create a new channel"""
@@ -51,7 +57,7 @@ class RabbitMQ:
     @backoff.on_exception(
         backoff.expo,
         (aio_pika.exceptions.AMQPConnectionError, aio_pika.exceptions.AMQPChannelError),
-        max_tries=settings.rabbitmq.retry_count,
+        max_tries=settings.rabbitmq_retry_count,
         max_time=30,
     )
     async def setup_channel(self) -> None:
@@ -66,7 +72,7 @@ class RabbitMQ:
 
             # Declare queue
             queue = await channel.declare_queue(
-                settings.rabbitmq.queue_name,
+                settings.rabbitmq_queue_name,
                 durable=True,
                 arguments={
                     "x-dead-letter-exchange": "notification_dlx",
@@ -90,12 +96,12 @@ class RabbitMQ:
             await dlq.bind(dlx, "notification_dlq")
 
             # Set QoS
-            await channel.set_qos(prefetch_count=settings.rabbitmq.prefetch_count)
+            await channel.set_qos(prefetch_count=settings.rabbitmq_prefetch_count)
 
     @backoff.on_exception(
         backoff.expo,
         (aio_pika.exceptions.AMQPConnectionError, aio_pika.exceptions.AMQPChannelError),
-        max_tries=settings.rabbitmq.retry_count,
+        max_tries=settings.rabbitmq_retry_count,
         max_time=30,
     )
     async def publish(self, message: Dict[str, Any]) -> None:
@@ -114,13 +120,13 @@ class RabbitMQ:
     @backoff.on_exception(
         backoff.expo,
         (aio_pika.exceptions.AMQPConnectionError, aio_pika.exceptions.AMQPChannelError),
-        max_tries=settings.rabbitmq.retry_count,
+        max_tries=settings.rabbitmq_retry_count,
         max_time=30,
     )
     async def consume(self, callback: callable) -> None:
         """Consume messages from the queue"""
         async with self._channel_pool.acquire() as channel:
-            queue = await channel.get_queue(settings.rabbitmq.queue_name)
+            queue = await channel.get_queue(settings.rabbitmq_queue_name)
             await queue.consume(callback)
 
     async def close(self) -> None:

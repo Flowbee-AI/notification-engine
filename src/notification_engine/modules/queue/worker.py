@@ -24,7 +24,7 @@ class NotificationWorker:
     @backoff.on_exception(
         backoff.expo,
         Exception,
-        max_tries=settings.onesignal.max_retries,
+        max_tries=settings.onesignal_max_retries,
         max_time=30,
     )
     async def process_message(self, message: Message) -> None:
