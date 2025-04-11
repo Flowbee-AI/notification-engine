@@ -23,7 +23,13 @@ app.add_middleware(
 # Create a dependency to get the worker instance
 def get_worker() -> NotificationWorker:
     return NotificationWorker(
-        onesignal_client=OneSignalClient(config=OneSignalConfig())
+        onesignal_client=OneSignalClient(
+            config=OneSignalConfig(
+                app_id=settings.onesignal_app_id,
+                rest_api_key=settings.onesignal_rest_api_key,
+                api_url=settings.onesignal_api_url,
+            )
+        )
     )
 
 

@@ -1,5 +1,4 @@
 import aiohttp
-import json
 from typing import Dict, Any, Optional
 from ...config.onesignal_config import OneSignalConfig
 
@@ -9,7 +8,7 @@ class OneSignalClient:
         self.config = config
         self.base_url = "https://onesignal.com/api/v1"
         self.headers = {
-            "Content-Type": "application/json",
+            "Content-Type": "application/json", 
             "Authorization": f"Basic {self.config.rest_api_key}",
         }
 
@@ -24,30 +23,22 @@ class OneSignalClient:
         Create and send a notification through OneSignal
         """
         url = f"{self.base_url}/notifications"
-
         payload = {"app_id": self.config.app_id, "contents": contents}
 
         if headings:
             payload["headings"] = headings
-        # if included_segments:
-        #     payload["included_segments"] = included_segments
-        if include_external_user_ids:
-            #             "include_aliases": {
-            #     "external_id": [
-            #       "user1",
-            #       "user2",
-            #       "user3"
-            #     ]
-            #   },
+
+        if not include_external_user_ids:
+            payload["included_segments"] = ["All"]
+        else:
             payload["include_aliases"] = {"external_id": include_external_user_ids}
             payload["target_channel"] = "push"
+
         if data:
             payload["data"] = data
-        print(payload)
+
         async with aiohttp.ClientSession() as session:
-            async with session.post(
-                url, headers=self.headers, json=payload
-            ) as response:
+            async with session.post(url, headers=self.headers, json=payload) as response:
                 return await response.json()
 
     async def cancel_notification(self, notification_id: str) -> Dict[str, Any]:

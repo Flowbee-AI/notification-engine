@@ -82,7 +82,6 @@ class NotificationWorker:
             # Check if we can create a test notification
             await self.onesignal_client.create_notification(
                 contents={"en": "Health check"},
-                included_segments=["All"],
             )
             return True
         except Exception as e:

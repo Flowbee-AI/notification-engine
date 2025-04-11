@@ -3,15 +3,15 @@ import signal
 from typing import List
 
 from dotenv import load_dotenv
-from .config.settings import settings
-from .config.onesignal_config import OneSignalConfig
-from .modules.queue.rabbitmq import RabbitMQ
-from .modules.queue.worker import NotificationWorker
-from .modules.queue.queue_service import QueueService
-from .modules.onesignal.client import OneSignalClient
-from .utils.logger import logger, setup_logger
-from .utils.metrics import metrics
-from .health import start_health_server
+from notification_engine.config.settings import settings
+from notification_engine.config.onesignal_config import OneSignalConfig
+from notification_engine.modules.queue.rabbitmq import RabbitMQ
+from notification_engine.modules.queue.worker import NotificationWorker
+from notification_engine.modules.queue.queue_service import QueueService
+from notification_engine.modules.onesignal.client import OneSignalClient
+from notification_engine.utils.logger import logger, setup_logger
+from notification_engine.utils.metrics import metrics
+from notification_engine.health import start_health_server
 
 # Load environment variables
 load_dotenv(dotenv_path=".env")
@@ -41,9 +41,9 @@ async def main():
 
         # Initialize OneSignal client
         onesignal_config = OneSignalConfig(
-            app_id=settings.onesignal.app_id,
-            rest_api_key=settings.onesignal.rest_api_key,
-            api_url=settings.onesignal.api_url,
+            app_id=settings.onesignal_app_id,
+            rest_api_key=settings.onesignal_rest_api_key,
+            api_url=settings.onesignal_api_url,
         )
         onesignal_client = OneSignalClient(onesignal_config)
 
